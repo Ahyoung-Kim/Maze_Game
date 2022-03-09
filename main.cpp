@@ -1,5 +1,4 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include<stdio.h>
 #include<iostream>
 #include<Windows.h>
 #include<conio.h>
@@ -9,13 +8,16 @@
 #include<cstdlib>
 #include<random>
 #include<time.h>
+#include<random>
 
 using namespace std;
 
 int W, H;
-char** map;
-bool** visit;
-int** numSet;
+char map[50][50];
+bool visit[20][20];
+int numSet[20][20];
+int score;
+int min_path;
 
 typedef struct node {
 	int x;
@@ -34,31 +36,57 @@ void Move(int x, int y) {
 //콘솔 창 세팅하는 함수
 void SetConsole() {
 
-	system("mode con:cols=100 lines=40");
+	system("mode con:cols=100 lines=45");
 	system("title [MazeGame] by. Ahyoung-Kim");
 }
 
 void DrawGame() {
 
 	system("cls");
-	Move(10, 4);
-	cout << "===========================================================";
 	Move(10, 6);
-	cout << "=========================Maze Game=========================";
-	Move(10, 8);
 	cout << "===========================================================";
-	Move(18, 12);
-	cout << "'s' key를 누르면 시작합니다.";
+	Move(10, 8);
+	cout << "=========================Maze Game=========================";
+	Move(10, 10);
+	cout << "===========================================================";
 	Move(18, 14);
+	cout << "'s' key를 누르면 시작합니다.";
+	Move(18, 16);
 	cout << "'q' key를 누르면 종료합니다.";
-	Move(21, 35);
+	Move(21, 37);
 	cout << "by. Ahyoung-Kim" << endl;
 
 }
 
+void ReGame() {
+	system("cls");
+	Move(19, 6);
+	cout << "AI: " << min_path << "    your score: " << score;
+	Move(17, 8);
+	cout << "================================";
+	Move(17, 10);
+	if (min_path < score)
+		cout << "==           LOSE!            ==";
+	else
+		cout << "==            WIN!            ==";
+	Move(17, 12);
+	cout << "================================";
+
+	Move(10, 16);
+	cout << "===========================================================";
+	Move(10, 18);
+	cout << "====               다시 시작하겠습니까?                 ===";
+	Move(10, 20);
+	cout << "===========================================================";
+	Move(20, 24);
+	cout << "'s' key: 한 번 더!";
+	Move(20, 26);
+	cout << "'q' key: 종료";
+}
+
 bool SetGame() {
 	int key;
-	DrawGame();
+	//DrawGame();
 	while (true) {
 		if (_kbhit()) {
 			key = _getch();
@@ -79,28 +107,14 @@ bool SetGame() {
 
 void Input() {
 	system("cls");
-	Move(18, 4);
+	Move(15, 12);
+	cout << "< 2 이상, 15이하인 정수를 입력해 주세요. >";
+	Move(18, 16);
 	cout << "미로의 너비를 입력하세요: ";
 	cin >> W;
-	Move(18, 6);
+	Move(18, 18);
 	cout << "미로의 높이를 입력하세요: ";
 	cin >> H;
-}
-
-void DynamicAllocate() {
-	map = new char* [H * 2 + 1];
-	visit = new bool* [H];
-	numSet = new int* [H];
-
-	for (int i = 0; i < H * 2 + 1; i++) {
-		for (int j = 0; j < W * 2 + 1; j++) {
-			map[i] = new char[W * 2 + 1];
-			if (i < H) {
-				visit[i] = new bool[W];
-				numSet[i] = new int[W];
-			}
-		}
-	}
 }
 
 void InitMaze() {
@@ -134,7 +148,6 @@ void InitMaze() {
 		}
 	}
 }
-
 
 //엘러 알고리즘으로 완전 미로 만들기
 void MadeMaze_Eller() {
@@ -212,7 +225,23 @@ void MadeMaze_Eller() {
 
 void PrintMaze() {
 
-	//system("cls");
+	system("cls");
+
+	Move(40, 2);
+	cout << "=================";
+	Move(40, 3);
+	cout << "==   종료: q   ==";
+	Move(40, 4);
+	cout << "=================";
+
+	Move(38, 8);
+	cout << "===================";
+	Move(38, 10);
+	cout << "==   score: " << score + 1 << "   ==";
+	Move(38, 12);
+	cout << "===================";
+
+
 	for (int i = 0; i < H * 2 + 1; i++) {
 		Move(20, 10 + i);
 		for (int j = 0; j < W * 2 + 1; j++) {
@@ -227,6 +256,10 @@ int PressKey() { //1. up 2. down 3. left 4. right
 	while (true) {
 		if (_kbhit()) {
 			key = _getch();
+
+			if (key == 'Q' || key == 'q') {
+				return -1;
+			}
 
 			if (key == 224) {
 				key = _getch();
@@ -254,46 +287,107 @@ int PressKey() { //1. up 2. down 3. left 4. right
 	return -1;
 }
 
-int SearchMaze() {
+int bfs(int ex, int ey) {
+	
+	queue<node> q;
 
-	system("cls");
+	int dx[4] = { 0, 0, 1, -1 };
+	int dy[4] = { 1, -1, 0, 0 };
+	int ans = W * H;
+
+	q.push({ 0, 0, 0 });
+	visit[0][0] = true;
+
+	while (!q.empty()) {
+		node temp = q.front();
+		q.pop();
+
+		if (temp.x == ex && temp.y == ey) {
+			ans = min(ans, temp.num + 1);
+		}
+
+		for (int i = 0; i < 4; i++) {
+			int tx = temp.x + dx[i];
+			int ty = temp.y + dy[i];
+
+			if (tx < 0 || tx >= W || ty < 0 || ty >= W)
+				continue;
+			if (visit[ty][tx])
+				continue;
+			if (map[temp.y * 2 + 1 + dy[i]][temp.x * 2 + 1 + dx[i]] != ' ')
+				continue;
+
+			visit[ty][tx] = true;
+			q.push({ tx, ty, temp.num + 1 });
+		}
+
+	}
+	return ans;
+
+}
+
+bool SearchMaze() {
+
+	//system("cls");
 	int dx[4] = { 0, 0, -1, 1 };
 	int dy[4] = { -1, 1, 0, 0 };
 
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_int_distribution<int> dis_x(1, W - 1);
+	uniform_int_distribution<int> dis_y(1, H - 1);
+
 	queue<node> q;
 	node temp;
-	int score = 0;
-
+	int ex, ey; //목적지 랜덤하게 설정
+	score = 0;
 	temp.x = 0;
 	temp.y = 0;
 
+	//start point는 항상 (1, 1)
 	visit[0][0] = 1;
 	q.push(temp);
 	map[1][1] = '*';
+
+	ex = dis_x(gen);
+	ey = dis_y(gen);
+
+	map[ey * 2 + 1][ex * 2 + 1] = '#';
+
+	min_path = bfs(ex, ey);
+	cout << "최단 경로 길이: " << min_path << endl;
+
 	PrintMaze();
+
+	score++;
 
 	while (!q.empty()) {
 
 		temp = q.front();
 
-		if (temp.x == W - 1 && temp.y == H - 1) {
-			cout << "미로 탈출!" << endl;
-			return score;
+		if (temp.x == ex && temp.y == ey) {
+			return true;
 		}
 
 		int key = PressKey();
+
+		if (key == -1) {
+			return false;
+		}
 
 		int tx = temp.x + dx[key];
 		int ty = temp.y + dy[key];
 
 
 		if (tx < 0 || tx >= W || ty < 0 || ty >= H) {
-			cout << "움직일 수 없습니다. 방향키를 다시 입력하세요." << endl;
+			Move(12, 3);
+			cout << "< 움직일 수 없습니다. 방향키를 다시 입력하세요. >";
 			continue;
 		}
 		if (map[temp.y * 2 + 1 + dy[key]][temp.x * 2 + 1 + dx[key]] == '-' ||
 			map[temp.y * 2 + 1 + dy[key]][temp.x * 2 + 1 + dx[key]] == '|') {
-			cout << "움직일 수 없습니다. 방향키를 다시 입력하세요." << endl;
+			Move(12, 3);
+			cout << "< 움직일 수 없습니다. 방향키를 다시 입력하세요. >";
 			continue;
 		}
 
@@ -305,39 +399,40 @@ int SearchMaze() {
 		q.pop();
 		q.push({ tx, ty });
 	}
-
-	return 0;
 }
 
-void StartGame() {
-
-
-}
 
 int main(void) {
 
 	SetConsole(); //콘솔 창 세팅
 
 	srand((unsigned int)time(NULL));
+	DrawGame();
+	bool start_flag = SetGame();
+	bool end_flag = false;
 
-	FILE* fp = fopen("maze.maz", "w+t");
+	while (true) {
 
-	if (fp == NULL) {
-		cout << "File Open Error." << endl;
-		return 0;
-	}
+		if (start_flag) {
+			Input();
+			InitMaze();
 
-	Input();
-	DynamicAllocate();
-	InitMaze();
+			MadeMaze_Eller();
+			PrintMaze();
 
-	MadeMaze_Eller();
-	PrintMaze();
+			end_flag = SearchMaze();
 
-	int ret = SearchMaze();
-
-	if (ret > 0) {
-		cout << "score = " << ret << endl;
+			if (end_flag) {
+				ReGame();
+				start_flag = SetGame();
+			}
+			else {
+				DrawGame();
+				start_flag = SetGame();
+			}
+		}
+		else
+			break;
 	}
 
 
