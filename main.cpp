@@ -14,10 +14,14 @@ using namespace std;
 
 int W, H;
 char map[50][50];
+char path[50][50];
 bool visit[20][20];
 int numSet[20][20];
 int score;
 int min_path;
+
+int dx[4] = { 0, 0, 1, -1 };
+int dy[4] = { 1, -1, 0, 0 };
 
 typedef struct node {
 	int x;
@@ -149,6 +153,37 @@ void InitMaze() {
 	}
 }
 
+void dfs(int x, int y, int num) {
+
+	visit[y][x] = true;
+	stack<node> s;
+	s.push({ x, y, num });
+
+	while (!s.empty()) {
+		node temp = s.top();
+		s.pop();
+
+		for (int i = 0; i < 4; i++) {
+			int tx = temp.x + dx[i];
+			int ty = temp.y + dy[i];
+
+			if (tx < 0 || tx >= W || ty < 0 || ty >= H)
+				continue;
+			if (visit[tx][ty])
+				continue;
+			if (map[temp.y * 2 + 1 + dy[i]][temp.x * 2 + 1 + dx[i]] != ' ') //두 방 사이에 벽이 있으면 continue
+				continue;
+			//if (numSet[ty][tx] == temp.num) //이미 같으면 continue
+				//continue;
+
+			numSet[ty][tx] = temp.num;
+			visit[ty][tx] = true;
+			s.push({ tx, ty, temp.num });
+		}
+	}
+
+}
+
 //엘러 알고리즘으로 완전 미로 만들기
 void MadeMaze_Eller() {
 	int i, j, k;
@@ -171,55 +206,96 @@ void MadeMaze_Eller() {
 				int tx = j * 2 + 2;
 				int ty = i * 2 + 1;
 				map[ty][tx] = ' ';
+
+				/*memset(visit, false, sizeof(visit));
+				for (int y = 0; y <= i; y++) {
+					for (int x = 0; x < W; x++) {
+						if (!visit[y][x])
+							dfs(x, y, numSet[y][x]);
+					}
+				}*/
 			}
 
 		}
+
+		/*cout << "===========수직 벽 제거 후==============" << endl;
+		for (int i = 0; i < H * 2 + 1; i++) {
+			for (int j = 0; j < W * 2 + 1; j++) {
+				if (i % 2 == 1 && j % 2 == 1) {
+					cout << numSet[(i - 1) / 2][(j - 1) / 2];
+				}
+				else {
+					cout << map[i][j];
+				}
+			}
+			cout << endl;
+		}*/
 
 		if (i == H - 1)
 			break;
 
 		//수평 벽 제거
 
-		int cnt = 0; //현재 행에서 같은 집합 속 방의 개수 
-		int prev = numSet[i][0];
-		int num_start = 0;
+		int cnt = 1; //현재 행에서 같은 집합 속 방의 개수 
 
-		for (j = 0; j < W; j++) {
-			if (prev == numSet[i][j]) {
-				cnt++; //같은 집합 속 방 개수 증가
+		for (j = 0; j < W; j += cnt) {
+			cnt = 1;
 
-				if (prev == numSet[i][j + 1]) //다음 방과도 같은 집합이면 continue
-					continue;
-				else {
-					int remove_idx = rand() % cnt; //수평 벽 제거할 방 임의로 선택
-					remove_idx += num_start;
+			if (j < W - 1) {
+				for (k = j + 1; k < W; k++) {
+					if (numSet[i][j] != numSet[i][k])
+						break;
+					cnt++;
+				}
+			}
 
-					numSet[i + 1][remove_idx] = numSet[i][remove_idx];
-					int tx = remove_idx * 2 + 1;
-					int ty = i * 2 + 2;
-					map[ty][tx] = ' ';
+			if (cnt == 1) {
+				numSet[i + 1][j] = numSet[i][j]; //집합 리셋
+				map[i * 2 + 2][j * 2 + 1] = ' '; //제거
+			}
+			else {
+				int remove_idx = rand() % cnt;
+				remove_idx += j; //벽 제거할 위치 
 
-					for (k = 0; k < cnt; k++) {
-						k += prev;
-						if (k != remove_idx) {
-							remove_wall = rand() % 2;
+				numSet[i + 1][remove_idx] = numSet[i][remove_idx];
+				map[i * 2 + 2][remove_idx * 2 + 1] = ' ';
 
-							if (remove_wall == 1) {
-								numSet[i + 1][k] = numSet[i][k];
-								tx = k * 2 + 1;
-								ty = i * 2 + 2;
-								map[ty][tx] = ' ';
-							}
+				//하나 제거했으면 나머지 벽은 임의로 제거
+				for (int s = j; s < j + cnt; s++) {
+					if (s != remove_idx) {
+						remove_wall = rand() % 2;
+
+						if (remove_wall == 1) {
+							numSet[i + 1][s] = numSet[i][s];
+							map[i * 2 + 2][s * 2 + 1] = ' ';
 						}
 					}
-
-					prev = numSet[i][j + 1];
-					cnt = 0;
-					num_start = j + 1;
 				}
-
 			}
+
 		}
+
+		/*cout << "===========수평 벽 제거 후==============" << endl;
+		for (int i = 0; i < H * 2 + 1; i++) {
+			for (int j = 0; j < W * 2 + 1; j++) {
+				if (i%2==1 && j%2==1) {
+					cout << numSet[(i - 1) / 2][(j - 1) / 2];
+				}
+				else {
+					cout << map[i][j];
+				}
+			}
+			cout << endl;
+		}
+		cout << "===============================================" << endl;
+
+		/*memset(visit, false, sizeof(visit));
+		for (int y = 0; y <= i + 1; y++) {
+			for (int x = 0; x < W; x++) {
+				if (!visit[y][x])
+					dfs(x, y, numSet[y][x]);
+			}
+		}*/
 	}
 }
 
@@ -289,10 +365,9 @@ int PressKey() { //1. up 2. down 3. left 4. right
 
 int bfs(int ex, int ey) {
 	
+	memset(visit, false, sizeof(visit));
 	queue<node> q;
 
-	int dx[4] = { 0, 0, 1, -1 };
-	int dy[4] = { 1, -1, 0, 0 };
 	int ans = W * H;
 
 	q.push({ 0, 0, 0 });
