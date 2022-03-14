@@ -12,13 +12,12 @@
 
 using namespace std;
 
-int W, H;
-char map[50][50];
-char path[50][50];
-bool visit[20][20];
-int numSet[20][20];
-int score;
-int min_path;
+int W, H; //미로의 너비, 높이
+char map[50][50]; //전체 미로 맵
+bool visit[20][20]; //방 탐색 여부 표시
+int numSet[20][20]; //엘러 알고리즘에서 사용할 각 방의 집합 번호
+int score; //게임 점수
+int min_path; //bfs로 탐색한 경로 길이 
 
 int dx[4] = { 0, 0, 1, -1 };
 int dy[4] = { 1, -1, 0, 0 };
@@ -44,6 +43,7 @@ void SetConsole() {
 	system("title [MazeGame] by. Ahyoung-Kim");
 }
 
+//게임 시작화면 그리기
 void DrawGame() {
 
 	system("cls");
@@ -62,6 +62,7 @@ void DrawGame() {
 
 }
 
+//게임 종료 후 승패 보여주는 함수
 void ReGame() {
 	system("cls");
 	Move(19, 6);
@@ -88,6 +89,7 @@ void ReGame() {
 	cout << "'q' key: 종료";
 }
 
+//게임 시작/종료 키 입력받는 함수
 bool SetGame() {
 	int key;
 	//DrawGame();
@@ -109,6 +111,7 @@ bool SetGame() {
 	return false;
 }
 
+//미로의 너비, 높이 입력하는 함수
 void Input() {
 	system("cls");
 	Move(15, 12);
@@ -121,6 +124,7 @@ void Input() {
 	cin >> H;
 }
 
+//미로에 대한 정보들 초기화하는 함수
 void InitMaze() {
 	int i, j;
 
@@ -153,37 +157,6 @@ void InitMaze() {
 	}
 }
 
-void dfs(int x, int y, int num) {
-
-	visit[y][x] = true;
-	stack<node> s;
-	s.push({ x, y, num });
-
-	while (!s.empty()) {
-		node temp = s.top();
-		s.pop();
-
-		for (int i = 0; i < 4; i++) {
-			int tx = temp.x + dx[i];
-			int ty = temp.y + dy[i];
-
-			if (tx < 0 || tx >= W || ty < 0 || ty >= H)
-				continue;
-			if (visit[tx][ty])
-				continue;
-			if (map[temp.y * 2 + 1 + dy[i]][temp.x * 2 + 1 + dx[i]] != ' ') //두 방 사이에 벽이 있으면 continue
-				continue;
-			//if (numSet[ty][tx] == temp.num) //이미 같으면 continue
-				//continue;
-
-			numSet[ty][tx] = temp.num;
-			visit[ty][tx] = true;
-			s.push({ tx, ty, temp.num });
-		}
-	}
-
-}
-
 //엘러 알고리즘으로 완전 미로 만들기
 void MadeMaze_Eller() {
 	int i, j, k;
@@ -206,30 +179,9 @@ void MadeMaze_Eller() {
 				int tx = j * 2 + 2;
 				int ty = i * 2 + 1;
 				map[ty][tx] = ' ';
-
-				/*memset(visit, false, sizeof(visit));
-				for (int y = 0; y <= i; y++) {
-					for (int x = 0; x < W; x++) {
-						if (!visit[y][x])
-							dfs(x, y, numSet[y][x]);
-					}
-				}*/
 			}
 
 		}
-
-		/*cout << "===========수직 벽 제거 후==============" << endl;
-		for (int i = 0; i < H * 2 + 1; i++) {
-			for (int j = 0; j < W * 2 + 1; j++) {
-				if (i % 2 == 1 && j % 2 == 1) {
-					cout << numSet[(i - 1) / 2][(j - 1) / 2];
-				}
-				else {
-					cout << map[i][j];
-				}
-			}
-			cout << endl;
-		}*/
 
 		if (i == H - 1)
 			break;
@@ -274,31 +226,10 @@ void MadeMaze_Eller() {
 			}
 
 		}
-
-		/*cout << "===========수평 벽 제거 후==============" << endl;
-		for (int i = 0; i < H * 2 + 1; i++) {
-			for (int j = 0; j < W * 2 + 1; j++) {
-				if (i%2==1 && j%2==1) {
-					cout << numSet[(i - 1) / 2][(j - 1) / 2];
-				}
-				else {
-					cout << map[i][j];
-				}
-			}
-			cout << endl;
-		}
-		cout << "===============================================" << endl;
-
-		/*memset(visit, false, sizeof(visit));
-		for (int y = 0; y <= i + 1; y++) {
-			for (int x = 0; x < W; x++) {
-				if (!visit[y][x])
-					dfs(x, y, numSet[y][x]);
-			}
-		}*/
 	}
 }
 
+//미로 화면에 출력
 void PrintMaze() {
 
 	system("cls");
@@ -327,6 +258,7 @@ void PrintMaze() {
 	}
 }
 
+//게임할 때 방향키 입력받는 함수
 int PressKey() { //1. up 2. down 3. left 4. right
 	int key = 0;
 	while (true) {
@@ -363,6 +295,7 @@ int PressKey() { //1. up 2. down 3. left 4. right
 	return -1;
 }
 
+//BFS로 찾는 미로 탈출 경로
 int bfs(int ex, int ey) {
 	
 	memset(visit, false, sizeof(visit));
@@ -401,6 +334,7 @@ int bfs(int ex, int ey) {
 
 }
 
+//게임 핵심 함수
 bool SearchMaze() {
 
 	//system("cls");
